@@ -1263,13 +1263,10 @@ var o_browse = {
                     $(selector).infiniteScroll({
                         path: function() {
                             let startObs = opus.prefs[`${view.prefix}startobs`];
-                            if ($(selector).data("infiniteScroll") != undefined && $(selector).data("infiniteScroll").options.loadPrevPage === true) {
-                                $(selector).infiniteScroll({"loadPrevPage": true});
-                            } else {
-                                let lastObs = $(`${view.namespace} .thumbnail-container`).last().data("obs");
-                                // start from the last observation drawn; if none yet drawn ...???
-                                startObs = (lastObs != undefined ? lastObs + 1 : startObs + o_browse.getLimit());
-                            }
+                            /// this may not work w/prev TODO
+                            let lastObs = $(`${view.namespace} .thumbnail-container`).last().data("obs");
+                            // start from the last observation drawn; if none yet drawn ...???
+                            startObs = (lastObs != undefined ? lastObs + 1 : startObs + o_browse.getLimit()); 
                             let path = o_browse.getDataURL(startObs);
                             return path;
                         },
@@ -1280,7 +1277,6 @@ var o_browse = {
                         scrollThreshold: 500,
                         debug: false,
                     });
-
                     $(selector).on("request.infiniteScroll", function(event, path) {
                         // hide default page status loader if op-page-loading-status loader is spinning
                         // && o_browse.tableSorting
