@@ -13,16 +13,24 @@ import time
 # URL_PREFIX = 'https://tools.pds-rings.seti.org/opus'
 DEFAULT_URL_PARAMS = {}
 
-URL_PREFIX = sys.argv[1]
+MIN_PROCS = int(sys.argv[1])
+MAX_PROCS = int(sys.argv[2])
+URL_PREFIX = sys.argv[3]
+
+if URL_PREFIX == 'localhost':
+    URL_PREFIX = 'http://127.0.0.1:8000/opus'
+elif URL_PREFIX == 'dev':
+    URL_PREFIX = 'https://dev.pds-rings.seti.org/opus'
+elif URL_PREFIX == 'tools':
+    URL_PREFIX = 'https://tools.pds-rings.seti.org/opus'
 
 # MAX_TIME = 10.
-MIN_ITERS = 1
-MAX_ITERS = 1
+# MIN_ITERS = 2
+# MAX_ITERS = 2
+
 MAX_TIME = 20*60.
-# MIN_ITERS = 3
-# MAX_ITERS = 10
-DUMMY_MIN_ITERS = 10
-DUMMY_MAX_ITERS = 100
+MIN_ITERS = 3
+MAX_ITERS = 10
 
 STD_TOLERANCE = 0.05 # Iterate until std stabilizes within 5%
 
@@ -344,7 +352,6 @@ def run_all_benchmarks(proc_num):
     results = []
 
     for func, title in BENCHMARK_FUNCS:
-        print(f'Running {title}... ', end='')
         sys.stdout.flush()
         ret = func(MAX_TIME, MIN_ITERS, MAX_ITERS)
         results.append((title, ret))
@@ -356,33 +363,45 @@ def run_all_benchmarks(proc_num):
 ################################################################################
 
 def consolidate_results(results_per_proc):
-    ret = []
-    for bench_num in range(len(BENCHMARK_FUNCS)):
-        time_list = []
-        initial_list = []
-        for result in results_per_proc:
-            initial_list.append(result[bench_num][1][0])
-            time_list.extend(result[bench_num][1][1:])
-        ret.append((np.mean(initial_list),
-                    np.mean(time_list),
-                    np.std(time_list),
-                    len(time_list)))
-    return ret
+    time_list = []
+    initial_list = []
+    for result in results_per_proc:
+        initial_list.append(result[0])
+        time_list.extend(result[1:])
+
+    return (np.mean(initial_list),
+            np.mean(time_list),
+            np.std(time_list),
+            len(time_list))
+
+def call_a_benchmark(func):
+    return func(MAX_TIME, MIN_ITERS, MAX_ITERS)
 
 if __name__ == '__main__':
     final_results = []
 
-    for num_proc in [1,2,3,4,5,6,7,8]:
-        print(f'Running {num_proc} processors')
+    for num_proc in range(MIN_PROCS, MAX_PROCS+1):
+        print(f'*** {num_proc} processors ***')
 
         pool = Pool(num_proc)
-        results_per_proc = pool.imap(run_all_benchmarks,
-                                     range(num_proc))
+
+        result_list = []
+
+        for func, title in BENCHMARK_FUNCS:
+            print(f'Running {title}... ', end='')
+            sys.stdout.flush()
+            results = pool.imap(call_a_benchmark,
+                                [func]*num_proc)
+            # Force processes to finish and flatten result into a single list
+            results = list(results)
+            stats = consolidate_results(results)
+            result_list.append(stats)
+            print(f'{stats[1]:.3f}')
+            sys.stdout.flush()
+
         pool.close()
 
-        results_per_proc = list(results_per_proc) # Force processes to finish
-
-        final_results.append((num_proc, consolidate_results(results_per_proc)))
+        final_results.append((num_proc, result_list))
 
     print(f'{"Test":40s}Mean       Std   #')
 
