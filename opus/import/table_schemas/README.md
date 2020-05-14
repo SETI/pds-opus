@@ -12,8 +12,8 @@ columns. Each dictionary can contain the following fields:
                           'varcharNNN' (variable-length char field)
                           'text' (arbitrary-length char field)
                           'enum'
-                          'flag_yesno' (Enum 'Yes','No')
-                          'flag_onoff' (Enum 'On','Off')
+                          'flag_yesno' (Enum 'Yes','No','N/A')
+                          'flag_onoff' (Enum 'On','Off','N/A')
                           'timestamp' (implies ON UPDATE CURRENT_TIMESTAMP)
                           'datetime'
 
@@ -65,6 +65,13 @@ included:
                         ':', then the number of the array element.
       'FUNCTION'         in which case the data is the name of the function
                          to execute. <INST> and <MISSION> are substituted.
+      'MAX_ID'           in which case the data is ignored. The value used
+                         is the largest id used for that table so far + 1.
+    These can also be combined like 'TAB:<TABLE_NAME>||FUNCTION' in which case
+    data_source has three elements; the second is the table specifier and the
+    last is the function. If the first table is not found at all, then the
+    function is tried instead.
+
 
 Optional fields include:
 
